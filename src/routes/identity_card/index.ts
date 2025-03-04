@@ -4,17 +4,18 @@ import express from "express";
 type IdentityCardType = {
   where: {
     is_deleted: boolean;
-    College: {
-      name: {
+    Student?: {
+      student_no: {
         contains: string;
         mode: "insensitive" | "default";
       };
     };
   };
   include: {
-    College?: {
+    Semester?: boolean;
+    Student?: {
       include: {
-        Media: boolean;
+        College: true;
       };
     };
   };
@@ -27,23 +28,18 @@ router.get("/", async (req, res, next) => {
     const { limit, page, name } = req.query;
 
     const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
+    const limitNum = parseInt(limit as string) || 20;
     const offset = (pageNum - 1) * limitNum;
 
     let whereArr: IdentityCardType = {
       where: {
         is_deleted: false,
-        College: {
-          name: {
-            contains: name.toString(),
-            mode: "insensitive",
-          },
-        },
       },
       include: {
-        College: {
+        Semester: true,
+        Student: {
           include: {
-            Media: true,
+            College: true,
           },
         },
       },
@@ -51,8 +47,8 @@ router.get("/", async (req, res, next) => {
 
     if (name) {
       whereArr.where = {
-        College: {
-          name: {
+        Student: {
+          student_no: {
             contains: name.toString(),
             mode: "insensitive",
           },
@@ -94,11 +90,20 @@ router.get("/", async (req, res, next) => {
 });
 
 router.post("/create", async (req, res, next) => {
-  const { college_id } = req.body;
+  const { student_no, semester_id } = req.body;
 
   const identity_card = await prisma.identityCard.create({
     data: {
-      college_id,
+      Semester: {
+        connect: {
+          semester_id,
+        },
+      },
+      Student: {
+        connect: {
+          student_no,
+        },
+      },
     },
   });
 

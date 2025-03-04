@@ -28,6 +28,11 @@ router.get("/", async (req, res, next) => {
       },
       include: {
         College: true,
+        IdentityCard: {
+          include: {
+            Semester: true,
+          },
+        },
       },
     };
 
@@ -35,7 +40,7 @@ router.get("/", async (req, res, next) => {
       whereArr.where = {
         student_no: {
           contains: student_no.toString(),
-          mode: "insensitive",
+          mode: "default",
         },
       };
     }

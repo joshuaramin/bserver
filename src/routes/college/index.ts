@@ -30,7 +30,7 @@ router.get("/", async (req, res, next) => {
       },
       include: {
         Media: true,
-        IdentityCard: true,
+        IdentityLayout: true,
       },
     };
 
