@@ -15,42 +15,59 @@ type StudentWhere = {
 };
 
 router.get("/", async (req, res, next) => {
-  const { student_no } = req.query;
+  try {
+    const { student_no, limit, page } = req.query;
 
-  let student;
-  let result;
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const offset = (pageNum - 1) * limitNum;
 
-  let whereArr: StudentWhere = {
-    where: {
-      is_deleted: false,
-    },
-    include: {
-      College: true,
-    },
-  };
-
-  if (student_no) {
-    whereArr.where = {
-      student_no: {
-        contains: student_no.toString(),
-        mode: "insensitive",
+    let whereArr: StudentWhere = {
+      where: {
+        is_deleted: false,
+      },
+      include: {
+        College: true,
       },
     };
+
+    if (student_no) {
+      whereArr.where = {
+        student_no: {
+          contains: student_no.toString(),
+          mode: "insensitive",
+        },
+      };
+    }
+
+    let queryParams = {
+      where: whereArr.where,
+      include: whereArr.include,
+      take: limitNum,
+      skip: offset,
+    };
+
+    const totalItems = await prisma.student.count({ where: whereArr.where });
+    const items = await prisma.student.findMany(queryParams);
+    const totalPages = Math.ceil(totalItems / parseInt(limit as string));
+
+    const result = {
+      data: {
+        item: items,
+        totalPages,
+        totalItems,
+        currentPage: pageNum,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+      },
+      status: 200,
+      queryParams,
+    };
+
+    res.json(result);
+  } catch (e) {
+    console.log(e);
   }
-
-  let results = await prisma.student.findMany(whereArr);
-
-  if (results.length === 1) {
-    student = await prisma.student.findFirst(whereArr);
-  }
-
-  result = {
-    data: student,
-    status: 200,
-    queryParams: whereArr,
-  };
-
-  res.json(result);
 });
 
 router.post("/create", async (req, res, next) => {
